@@ -259,13 +259,14 @@ with gr.Blocks() as iface:
         file_input = gr.File(label="上传 Word 文件")
         model_dropdown = gr.Dropdown(
             choices=[
+                "google/gemini-2.5-flash",
                 "google/gemini-pro-1.5",
                 # "anthropic/claude-3.5-sonnet",
                 # "qwen/qwen-2.5-72b-instruct",
                 # "openai/gpt-4o-2024-08-06"
             ],
             label="选择模型",
-            value="google/gemini-pro-1.5"
+            value="google/gemini-2.5-flash"
         )
     
     use_ai_agenda = gr.Checkbox(label="使用 AI 自动生成议题", value=True)
