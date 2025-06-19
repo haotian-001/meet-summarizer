@@ -1,9 +1,7 @@
 import gradio as gr
 import docx
 import requests
-import pandas as pd
 from docxtpl import DocxTemplate
-import io
 import logging
 import os
 import tempfile
@@ -120,7 +118,15 @@ def call_llm_api(text, model, manual_agenda=None):
 # 使用JSON数据填充Word模板
 def fill_word_template(data, original_filename):
     logging.debug("开始填充Word模板")
-    template_path = "templates/template.docx"
+    # Get the directory where this script is located
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    template_path = os.path.join(script_dir, "templates", "template.docx")
+
+    # Check if template file exists
+    if not os.path.exists(template_path):
+        logging.error(f"Template file not found at: {template_path}")
+        raise FileNotFoundError(f"Template file not found at: {template_path}")
+
     doc = DocxTemplate(template_path)
     
     # Extract filename without extension from the full path
