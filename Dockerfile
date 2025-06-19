@@ -1,6 +1,10 @@
 # Use Python 3.11 slim image
 FROM python:3.11-slim
 
+# Set proxy environment variables for build process and runtime
+ENV http_proxy=http://asus:7890
+ENV https_proxy=http://asus:7890
+
 # Set working directory
 WORKDIR /app
 

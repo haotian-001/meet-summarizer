@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   meet-summarizer:
     build: .
@@ -8,6 +6,8 @@ services:
       - "7860:7860"
     environment:
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - http_proxy=http://asus:7890
+      - https_proxy=http://asus:7890
     volumes:
       - ./templates:/app/templates:ro
     restart: unless-stopped
