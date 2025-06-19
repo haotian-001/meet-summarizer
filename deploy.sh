@@ -112,7 +112,7 @@ if command -v yum &> /dev/null; then
     yum install -y gcc gcc-c++ python3-devel || print_warning "Some system packages may already be installed"
 elif command -v apt-get &> /dev/null; then
     print_status "Installing system dependencies with apt..."
-    apt-get update && apt-get install -y gcc g++ python3-dev || print_warning "Some system packages may already be installed"
+    apt-get update && apt-get install -y gcc g++ python3-dev python3-venv || print_warning "Some system packages may already be installed"
 fi
 
 # Create virtual environment if it doesn't exist
