@@ -140,15 +140,11 @@ export PYTHONUNBUFFERED=1
 export GRADIO_SERVER_NAME=0.0.0.0
 export GRADIO_SERVER_PORT=7860
 
-# Clear all proxy settings for the application runtime to avoid conflicts
-unset http_proxy
-unset https_proxy
-unset HTTP_PROXY
-unset HTTPS_PROXY
-unset all_proxy
-unset ALL_PROXY
-unset no_proxy
-unset NO_PROXY
+# Set proxy settings for the application runtime to access external APIs
+export http_proxy=http://asus:7890
+export https_proxy=http://asus:7890
+export HTTP_PROXY=http://asus:7890
+export HTTPS_PROXY=http://asus:7890
 
 # Create a PID file to track the application process
 PID_FILE="/tmp/${APP_NAME}.pid"
