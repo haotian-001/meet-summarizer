@@ -125,9 +125,37 @@ def fill_word_template(data, original_filename):
     # Check if template file exists
     if not os.path.exists(template_path):
         logging.error(f"Template file not found at: {template_path}")
+        logging.error(f"Script directory: {script_dir}")
+        logging.error(f"Directory contents: {os.listdir(script_dir)}")
+        if os.path.exists(os.path.join(script_dir, "templates")):
+            logging.error(f"Templates directory contents: {os.listdir(os.path.join(script_dir, 'templates'))}")
         raise FileNotFoundError(f"Template file not found at: {template_path}")
 
-    doc = DocxTemplate(template_path)
+    # Log additional file information for debugging
+    logging.debug(f"Template file found at: {template_path}")
+    try:
+        file_size = os.path.getsize(template_path)
+        file_stat = os.stat(template_path)
+        logging.debug(f"Template file size: {file_size} bytes")
+        logging.debug(f"Template file permissions: {oct(file_stat.st_mode)}")
+        logging.debug(f"Template file is readable: {os.access(template_path, os.R_OK)}")
+    except Exception as e:
+        logging.error(f"Error getting file stats: {e}")
+
+    try:
+        doc = DocxTemplate(template_path)
+        logging.debug("DocxTemplate object created successfully")
+    except Exception as e:
+        logging.error(f"Failed to create DocxTemplate object: {e}")
+        logging.error(f"Exception type: {type(e).__name__}")
+        # Try to read the file as binary to check if it's accessible
+        try:
+            with open(template_path, 'rb') as f:
+                first_bytes = f.read(100)
+                logging.debug(f"First 100 bytes of file: {first_bytes[:50]}...")
+        except Exception as read_error:
+            logging.error(f"Cannot even read file as binary: {read_error}")
+        raise
     
     # Extract filename without extension from the full path
     filename = os.path.splitext(os.path.basename(original_filename))[0]

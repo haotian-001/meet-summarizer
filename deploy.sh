@@ -121,6 +121,18 @@ if [ ! -f "app.py" ]; then
     exit 1
 fi
 
+if [ ! -d "templates" ]; then
+    print_error "templates directory not found!"
+    exit 1
+fi
+
+if [ ! -f "templates/template.docx" ]; then
+    print_error "templates/template.docx not found!"
+    exit 1
+fi
+
+print_status "All required files verified successfully"
+
 # Set proxy settings for network access
 print_status "Setting up proxy configuration..."
 export http_proxy=http://asus:7890
