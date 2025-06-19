@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Meet Summarizer Deployment Script
-# This script sets up and runs the application using Docker containers
+# This script sets up and runs the application using uv and virtual environments
 
 set -e  # Exit on any error
 
@@ -9,10 +9,8 @@ echo "🚀 Starting deployment of Meet Summarizer..."
 
 # Configuration
 APP_NAME="meet-summarizer"
-CONTAINER_NAME="${APP_NAME}-container"
-IMAGE_NAME="${APP_NAME}-image"
 APP_PORT="7860"
-DOCKERFILE_PATH="."
+VENV_NAME=".venv"
 
 # Colors for output
 RED='\033[0;31m'
@@ -47,15 +45,16 @@ fi
 CURRENT_DIR=$(pwd)
 print_status "Working in directory: $CURRENT_DIR"
 
-# Check if Docker is installed
-if ! command -v docker &> /dev/null; then
-    print_error "Docker is not installed. Please install Docker first."
+# Check if uv is installed
+if ! command -v uv &> /dev/null; then
+    print_error "uv is not installed. Please install uv first."
+    print_error "Install with: curl -LsSf https://astral.sh/uv/install.sh | sh"
     exit 1
 fi
 
-# Check if Docker daemon is running
-if ! docker info &> /dev/null; then
-    print_error "Docker daemon is not running. Please start Docker first."
+# Check if Python is available
+if ! command -v python3 &> /dev/null; then
+    print_error "Python 3 is not installed. Please install Python 3 first."
     exit 1
 fi
 
@@ -83,15 +82,7 @@ if [ -z "$OPENROUTER_API_KEY" ] || [ "$OPENROUTER_API_KEY" = "your_api_key_here"
     exit 1
 fi
 
-# Stop and remove existing container if running
-if docker ps -a --format "table {{.Names}}" | grep -q "^${CONTAINER_NAME}$"; then
-    print_status "Stopping existing container: $CONTAINER_NAME..."
-    docker stop "$CONTAINER_NAME" || true
-    print_status "Removing existing container: $CONTAINER_NAME..."
-    docker rm "$CONTAINER_NAME" || true
-fi
-
-# Kill any process using the port (in case something else is using it)
+# Kill any existing process using the port
 print_status "Checking for processes using port $APP_PORT..."
 if lsof -ti:$APP_PORT > /dev/null 2>&1; then
     print_warning "Port $APP_PORT is in use. Attempting to free it..."
@@ -99,20 +90,25 @@ if lsof -ti:$APP_PORT > /dev/null 2>&1; then
     sleep 2
 fi
 
-# Remove old Docker image if it exists
-if docker images --format "table {{.Repository}}:{{.Tag}}" | grep -q "^${IMAGE_NAME}:latest$"; then
-    print_status "Removing old Docker image: $IMAGE_NAME..."
-    docker rmi "$IMAGE_NAME:latest" || print_warning "Failed to remove old image, continuing..."
+# Kill any existing Python processes running the app
+print_status "Stopping any existing application processes..."
+pkill -f "python.*app.py" || true
+pkill -f "gradio.*app.py" || true
+sleep 2
+
+# Create or recreate virtual environment
+print_status "Setting up virtual environment with uv..."
+if [ -d "$VENV_NAME" ]; then
+    print_status "Removing existing virtual environment..."
+    rm -rf "$VENV_NAME"
 fi
 
-# Build Docker image
-print_status "Building Docker image: $IMAGE_NAME..."
-if ! docker build -t "$IMAGE_NAME:latest" "$DOCKERFILE_PATH"; then
-    print_error "Failed to build Docker image!"
-    exit 1
-fi
+print_status "Creating new virtual environment..."
+uv venv "$VENV_NAME"
 
-print_status "Docker image built successfully!"
+# Activate virtual environment
+print_status "Activating virtual environment..."
+source "$VENV_NAME/bin/activate"
 
 # Verify necessary files exist
 if [ ! -f "requirements.txt" ]; then
@@ -125,47 +121,54 @@ if [ ! -f "app.py" ]; then
     exit 1
 fi
 
-if [ ! -f "Dockerfile" ]; then
-    print_error "Dockerfile not found!"
+# Install dependencies using uv
+print_status "Installing dependencies with uv..."
+if ! uv pip install -r requirements.txt; then
+    print_error "Failed to install dependencies!"
     exit 1
 fi
 
-# Create and start Docker container
-print_status "Starting Docker container: $CONTAINER_NAME..."
-if ! docker run -d \
-    --name "$CONTAINER_NAME" \
-    -p "$APP_PORT:7860" \
-    --env-file .env \
-    -e PYTHONUNBUFFERED=1 \
-    -e GRADIO_SERVER_NAME=0.0.0.0 \
-    -e GRADIO_SERVER_PORT=7860 \
-    "$IMAGE_NAME:latest"; then
-    print_error "Failed to start Docker container!"
-    exit 1
-fi
+print_status "Dependencies installed successfully!"
+
+# Set environment variables for the application
+export PYTHONUNBUFFERED=1
+export GRADIO_SERVER_NAME=0.0.0.0
+export GRADIO_SERVER_PORT=7860
+
+# Create a PID file to track the application process
+PID_FILE="/tmp/${APP_NAME}.pid"
+
+# Start the application in the background
+print_status "Starting application..."
+nohup python app.py > "/tmp/${APP_NAME}.log" 2>&1 &
+APP_PID=$!
+
+# Save the PID for later management
+echo $APP_PID > "$PID_FILE"
 
 # Wait a moment for the application to start
 print_status "Waiting for application to start..."
-sleep 15
+sleep 10
 
-# Check if container is running
-if docker ps --format "table {{.Names}}" | grep -q "^${CONTAINER_NAME}$"; then
+# Check if the process is still running
+if kill -0 $APP_PID 2>/dev/null; then
     print_status "✅ Deployment successful!"
     print_status "Application is running on http://localhost:$APP_PORT"
-    print_status "Container name: $CONTAINER_NAME"
-    print_status "Docker image: $IMAGE_NAME:latest"
+    print_status "Process ID: $APP_PID"
+    print_status "Virtual environment: $VENV_NAME"
+    print_status "Log file: /tmp/${APP_NAME}.log"
 
     # Show recent logs
     print_status "Recent application logs:"
-    docker logs --tail 10 "$CONTAINER_NAME" || print_warning "No logs available yet"
+    tail -10 "/tmp/${APP_NAME}.log" 2>/dev/null || print_warning "No logs available yet"
 
     print_status "🎉 Deployment completed successfully!"
-    print_status "To view logs: docker logs -f $CONTAINER_NAME"
-    print_status "To stop the application: docker stop $CONTAINER_NAME"
-    print_status "To remove the container: docker rm $CONTAINER_NAME"
+    print_status "To view logs: tail -f /tmp/${APP_NAME}.log"
+    print_status "To stop the application: kill $APP_PID"
+    print_status "Or use: pkill -f 'python.*app.py'"
 else
     print_error "❌ Deployment failed!"
-    print_error "Container logs:"
-    docker logs "$CONTAINER_NAME" || echo "No logs available"
+    print_error "Application logs:"
+    cat "/tmp/${APP_NAME}.log" 2>/dev/null || echo "No logs available"
     exit 1
 fi
