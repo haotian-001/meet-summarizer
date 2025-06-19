@@ -145,6 +145,9 @@ export http_proxy=http://asus:7890
 export https_proxy=http://asus:7890
 export HTTP_PROXY=http://asus:7890
 export HTTPS_PROXY=http://asus:7890
+# Exclude localhost and local addresses from proxy
+export no_proxy=localhost,127.0.0.1,0.0.0.0
+export NO_PROXY=localhost,127.0.0.1,0.0.0.0
 
 # Create a PID file to track the application process
 PID_FILE="/tmp/${APP_NAME}.pid"
