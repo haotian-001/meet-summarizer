@@ -1,9 +1,9 @@
 # Use Python 3.11 slim image
 FROM python:3.11-slim
 
-# Set proxy environment variables for build process and runtime
-ENV http_proxy=http://asus:7890
-ENV https_proxy=http://asus:7890
+# Accept proxy settings as build arguments (optional)
+ARG http_proxy
+ARG https_proxy
 
 # Set working directory
 WORKDIR /app
@@ -33,6 +33,10 @@ EXPOSE 7860
 ENV PYTHONUNBUFFERED=1
 ENV GRADIO_SERVER_NAME=0.0.0.0
 ENV GRADIO_SERVER_PORT=7860
+
+# Set proxy environment variables for runtime
+ENV http_proxy=http://asus:7890
+ENV https_proxy=http://asus:7890
 
 # Run the application
 CMD ["python", "app.py"]
