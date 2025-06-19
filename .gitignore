@@ -5,6 +5,9 @@
 .vscode/
 .DS_Store
 
+# Gradio
+.gradio/
+
 # Python
 __pycache__/
 *.py[cod]

@@ -292,4 +292,4 @@ with gr.Blocks() as iface:
 
 if __name__ == "__main__":
     logging.debug("启动Gradio界面")
-    iface.launch(server_name="0.0.0.0", share=True)
+    iface.launch(server_name="0.0.0.0", share=False)

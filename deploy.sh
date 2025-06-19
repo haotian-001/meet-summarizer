@@ -121,6 +121,11 @@ if [ ! -f "app.py" ]; then
     exit 1
 fi
 
+# Set proxy settings for network access
+print_status "Setting up proxy configuration..."
+export http_proxy=http://asus:7890
+export https_proxy=http://asus:7890
+
 # Install dependencies using uv
 print_status "Installing dependencies with uv..."
 if ! uv pip install -r requirements.txt; then
@@ -134,6 +139,16 @@ print_status "Dependencies installed successfully!"
 export PYTHONUNBUFFERED=1
 export GRADIO_SERVER_NAME=0.0.0.0
 export GRADIO_SERVER_PORT=7860
+
+# Clear all proxy settings for the application runtime to avoid conflicts
+unset http_proxy
+unset https_proxy
+unset HTTP_PROXY
+unset HTTPS_PROXY
+unset all_proxy
+unset ALL_PROXY
+unset no_proxy
+unset NO_PROXY
 
 # Create a PID file to track the application process
 PID_FILE="/tmp/${APP_NAME}.pid"
